@@ -1,93 +1,61 @@
 import obspy
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
 import numpy as np
-from scipy import ndimage
-from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 
+
 class Radargramm:
-    scaled_amplitudes_df = pd.DataFrame()
-    amplitudes_df = pd.DataFrame()
+    def __init__(self):
+        self.amplitudes_df = pd.DataFrame()
 
     def read_from_segy(self, filepath):
-        amplitudes = []
         stream = obspy.read(filepath)
-        for trace in stream:
-            amplitudes.append(trace.data)
+        data = np.array([trace.data for trace in stream])
+        return pd.DataFrame(data).T  # Транспонируем для корректной работы с данными
 
-        # Преобразуем массивы в DataFrame
-        self.amplitudes_df = pd.DataFrame(amplitudes)
+    def interpolate_datasets(self, df1, df2, traces_between):
+        # Проверяем, что количество трасс в обоих датасетах одинаково
+        if df1.shape[1] != df2.shape[1]:
+            raise ValueError("Datasets must have the same number of traces")
 
-    def visualize(self, amplitudes_df, colormap='rainbow'):
-        fig, ax = plt.subplots(figsize=(10, 6))
+        # Рассчитываем новое количество трасс
+        new_trace_count = df1.shape[1] + df2.shape[1] + traces_between
 
-        amplitudes = amplitudes_df.values
-        amplitude_min = np.min(amplitudes)
-        amplitude_max = np.max(amplitudes)
+        # Инициализируем массив для интерполированных данных
+        interpolated_data = np.zeros((df1.shape[0], new_trace_count))
 
-        im = ax.imshow(amplitudes.T, cmap=colormap, aspect='auto')
-        plt.colorbar(im, label='Амплитуда сигнала')
-        plt.xlabel('Трассы')
-        plt.ylabel('Измерения')
-        plt.title('Радарограмма')
+        # Заполняем первый датасет
+        interpolated_data[:, :df1.shape[1]] = df1
 
-        # Создаем слайдеры для изменения диапазона амплитуд
-        ax_amplitude_min = plt.axes([0.2, 0.02, 0.65, 0.03])
-        ax_amplitude_max = plt.axes([0.2, 0.06, 0.65, 0.03])
+        # Начальный индекс для второго датасета
+        start_second_dataset = df1.shape[1] + traces_between
 
-        s_amplitude_min = Slider(ax_amplitude_min, 'Min Amplitude', amplitude_min, amplitude_max, valinit=amplitude_min)
-        s_amplitude_max = Slider(ax_amplitude_max, 'Max Amplitude', amplitude_min, amplitude_max, valinit=amplitude_max)
+        # Заполняем данные второго датасета
+        interpolated_data[:, start_second_dataset:start_second_dataset + df2.shape[1]] = df2
 
-        def update(val):
-            min_val = s_amplitude_min.val
-            max_val = s_amplitude_max.val
+        # Интерполируем между последней трассой первого и первой трассой второго датасета
+        start_value = df1.iloc[:, -1]
+        end_value = df2.iloc[:, 0]
+        for i in range(df1.shape[0]):
+            interpolated_data[i, df1.shape[1]:start_second_dataset] = np.linspace(start_value[i], end_value[i],
+                                                                                  traces_between + 2)[1:-1]
 
-            amplitudes_clipped = np.clip(amplitudes_df.values, min_val, max_val)
+        return pd.DataFrame(interpolated_data)
 
-            im.set_data(amplitudes_clipped.T)
-            fig.canvas.draw_idle()
-
-        s_amplitude_min.on_changed(update)
-        s_amplitude_max.on_changed(update)
-
+    def visualize(self, data):
+        plt.figure(figsize=(10, 6))
+        plt.imshow(data, aspect='auto', interpolation='none', cmap='gray')
+        plt.colorbar(label='Amplitude')
+        plt.xlabel('Traces')
+        plt.ylabel('Samples')
+        plt.title('Interpolated Radargram')
         plt.show()
 
-    def scale_data(self):
-        scaler = MinMaxScaler()
-        self.scaled_amplitudes_df = pd.DataFrame(scaler.fit_transform(self.amplitudes_df))
 
-    def preprocess_image(self):
-        # Находим 5-й процентный квантиль для сигналов радарограммы
-        threshold = np.percentile(self.scaled_amplitudes_df.values.flatten(), 5)
-
-        # Бинаризуем изображение: если значение амплитуды больше порога, делаем его 1, иначе 0
-        binary_image_quantile = (self.scaled_amplitudes_df > threshold).astype(int)
-
-        # Применяем операцию коррозии для выполнения "травления"
-        corroded_image = ndimage.binary_erosion(binary_image_quantile.values, structure=np.ones((3, 3))).astype(int)
-
-        # Визуализируем оба результата предобработки для сравнения
-        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-
-        # Визуализация квантильного анализа
-        ax = axes[0]
-        ax.imshow(binary_image_quantile.values.T, cmap='gray', aspect='auto')
-        ax.set_title('Квантильный анализ')
-        ax.set_xlabel('Трассы')
-        ax.set_ylabel('Измерения')
-
-        # Визуализация операции коррозии
-        ax = axes[1]
-        ax.imshow(corroded_image.T, cmap='gray', aspect='auto')
-        ax.set_title('Травление')
-        ax.set_xlabel('Трассы')
-        ax.set_ylabel('Измерения')
-
-        plt.show()
-
+# Example usage
 radargramm = Radargramm()
-radargramm.read_from_segy("initial_data/Пресный_водоём.seg")
-radargramm.scale_data()
-print(radargramm.scaled_amplitudes_df)
-radargramm.preprocess_image()
+data1 = radargramm.read_from_segy("initial_data/Пресный_водоём.seg")
+data2 = radargramm.read_from_segy("initial_data/Пресный_водоём.seg")  # Возможно, у вас другой файл
+traces_between = int(input("Enter the number of new traces to interpolate between existing traces: "))
+interpolated_data = radargramm.interpolate_datasets(data1, data2, traces_between)
+radargramm.visualize(interpolated_data)
