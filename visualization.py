@@ -58,32 +58,25 @@ class DataInterpolator:
 
     @staticmethod
     def interpolate_datasets(df1, df2, traces_between, kind='linear'):
-        # Создание массивов координат x для известных точек df1 и df2
-        x_left = np.arange(df1.shape[1])  # Координаты x для df1
-        x_right = np.arange(df1.shape[1] + traces_between,
-                            df1.shape[1] + traces_between + df2.shape[1])  # Координаты x для df2
-        x_full = np.hstack([x_left, x_right])  # Объединение координат x для обоих df
+        # Создаем массив x-координат для всех трасс df1 и df2
+        x_full = np.arange(df1.shape[1] + traces_between + df2.shape[1])
 
-        # Создание пустого массива для хранения интерполированных данных
-        interpolated_data = np.zeros((df1.shape[0], df1.shape[1] + traces_between + df2.shape[1]))
+        # Создаем пустой массив для хранения интерполированных данных
+        interpolated_data = np.zeros((df1.shape[0], len(x_full)))
 
-        # Процесс интерполяции для каждой трассы
+        # Проходим по каждой строке (трассе)
         for i in range(df1.shape[0]):
-            # Получаем данные для текущей трассы из df1 и df2
-            y_left = df1.iloc[i, :]
-            y_right = df2.iloc[i, :]
-            y_full = np.hstack([y_left, y_right])  # Объединение данных для обоих df
+            # Создаем временный массив y, заполняем его данными из df1 и df2 с пропусками для трасс между ними
+            y_temp = np.concatenate([df1.iloc[i, :], np.full(traces_between, np.nan), df2.iloc[i, :]])
 
-            # Создание функции интерполяции
-            interp_function = interpolate.interp1d(x_full, y_full, kind=kind, fill_value="extrapolate")
+            # Используем все трассы для создания функции интерполяции
+            valid_indices = ~np.isnan(y_temp)  # Индексы не-NaN значений
+            interp_function = interpolate.interp1d(x_full[valid_indices], y_temp[valid_indices], kind=kind,
+                                                   bounds_error=False, fill_value="extrapolate")
 
-            # Создание массива координат x для интерполяции
-            x_interpolated = np.linspace(0, x_full[-1], num=df1.shape[1] + traces_between + df2.shape[1])
+            # Интерполируем по всем x
+            interpolated_data[i, :] = interp_function(x_full)
 
-            # Выполнение интерполяции и заполнение данных
-            interpolated_data[i, :] = interp_function(x_interpolated)
-
-        # Возвращение DataFrame с интерполированными данными
         return pd.DataFrame(interpolated_data, index=df1.index)
 
     @staticmethod
