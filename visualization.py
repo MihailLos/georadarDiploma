@@ -2,7 +2,7 @@ import obspy
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.widgets import Slider, RadioButtons, Button, TextBox
+from matplotlib.widgets import Button, TextBox, RadioButtons
 from scipy import ndimage
 from sklearn.preprocessing import MinMaxScaler
 
@@ -23,28 +23,32 @@ class DataVisualizer:
                                                  index=self.amplitudes_df.index, columns=self.amplitudes_df.columns)
 
     def visualize(self, amplitudes_df, colormap='gray'):
-        fig, ax = plt.subplots(figsize=(10, 6))
-        # Изменения в этом блоке
-        amplitudes = amplitudes_df.values  # Удаляем транспонирование
-        amplitude_min, amplitude_max = np.min(amplitudes), np.max(amplitudes)
-
-        im = ax.imshow(amplitudes, cmap=colormap, aspect='auto')  # Удаляем транспонирование
-        plt.colorbar(im, label='Signal Amplitude')
+        plt.figure(figsize=(10, 6))
+        im = plt.imshow(amplitudes_df.values, aspect='auto', cmap=colormap)
+        plt.colorbar(im, label='Amplitude')
         plt.xlabel('Traces')
-        plt.ylabel('Measurements')
+        plt.ylabel('Samples')
         plt.title('Radargram')
+        plt.show()
 
-        ax_min = plt.axes([0.2, 0.02, 0.65, 0.03])
-        ax_max = plt.axes([0.2, 0.06, 0.65, 0.03])
-        s_min = Slider(ax_min, 'Min Amplitude', amplitude_min, amplitude_max, valinit=amplitude_min)
-        s_max = Slider(ax_max, 'Max Amplitude', amplitude_min, amplitude_max, valinit=amplitude_max)
+    def preprocess_image(self):
+        threshold = np.percentile(self.scaled_amplitudes_df.values.flatten(), 5)
+        binary_image_quantile = (self.scaled_amplitudes_df > threshold).astype(int)
+        corroded_image = ndimage.binary_erosion(binary_image_quantile.values, structure=np.ones((3, 3))).astype(int)
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 
-        def update(val):
-            im.set_clim([s_min.val, s_max.val])
-            fig.canvas.draw_idle()
+        ax = axes[0]
+        ax.imshow(binary_image_quantile.values, cmap='gray', aspect='auto')
+        ax.set_title('Квантильный анализ')
+        ax.set_xlabel('Трассы')
+        ax.set_ylabel('Измерения')
 
-        s_min.on_changed(update)
-        s_max.on_changed(update)
+        ax = axes[1]
+        ax.imshow(corroded_image, cmap='gray', aspect='auto')
+        ax.set_title('Травление')
+        ax.set_xlabel('Трассы')
+        ax.set_ylabel('Измерения')
+
         plt.show()
 
 
@@ -75,47 +79,51 @@ class DataInterpolator:
         plt.xlabel('Traces')
         plt.ylabel('Samples')
         plt.title('Interpolated Radargram')
-
         plt.axvline(x=start_interp, color='red', linestyle='--', linewidth=2)
         plt.axvline(x=end_interp, color='red', linestyle='--', linewidth=2)
-
         plt.show()
 
 
-# GUI and control setup
 visualizer = DataVisualizer()
 interpolator = DataInterpolator(visualizer)
-
 
 def main_interface():
     visualizer.read_from_segy("initial_data/Пресный_водоём.seg")
     visualizer.scale_data()
 
-    fig, ax = plt.subplots()
-    plt.subplots_adjust(left=0.3, bottom=0.3)
-    rax = plt.axes([0.05, 0.5, 0.15, 0.15], facecolor='lightgoldenrodyellow')
+    plt.figure(figsize=(8, 6))
+    plt.subplots_adjust(left=0.25, right=0.75, bottom=0.25)
+
+    rax = plt.axes([0.35, 0.7, 0.3, 0.15])
     radio = RadioButtons(rax, ('amplitudes_df', 'scaled_amplitudes_df'))
 
-    tbox = plt.axes([0.05, 0.3, 0.1, 0.075])
+    ax_preprocess = plt.axes([0.35, 0.5, 0.3, 0.075])
+    btn_preprocess = Button(ax_preprocess, 'Preprocess Image')
+
+    ax_visualize = plt.axes([0.35, 0.6, 0.3, 0.075])
+    btn_visualize = Button(ax_visualize, 'Visualize')
+
+    tbox = plt.axes([0.35, 0.2, 0.3, 0.075])
     text_box = TextBox(tbox, 'Traces:', initial="10")
 
-    ax_interpolate = plt.axes([0.05, 0.2, 0.1, 0.075])
+    ax_interpolate = plt.axes([0.35, 0.1, 0.3, 0.075])
     btn_interpolate = Button(ax_interpolate, 'Interpolate')
 
-    def visualize_data(label):
-        df = visualizer.amplitudes_df if label == 'amplitudes_df' else visualizer.scaled_amplitudes_df
+    def visualize_data(event):
+        df = visualizer.amplitudes_df if radio.value_selected == 'amplitudes_df' else visualizer.scaled_amplitudes_df
         visualizer.visualize(df)
 
-    radio.on_clicked(visualize_data)
+    def preprocess(event):
+        visualizer.preprocess_image()
 
     def interpolate(event):
         traces_between = int(text_box.text)
-        df_type = radio.value_selected
-        df = visualizer.amplitudes_df if df_type == 'amplitudes_df' else visualizer.scaled_amplitudes_df
-        interpolator.visualize_interpolation(
-            interpolator.interpolate_datasets(df, df, traces_between),
-            df.shape[1], df.shape[1] + traces_between)
+        df = visualizer.amplitudes_df if radio.value_selected == 'amplitudes_df' else visualizer.scaled_amplitudes_df
+        interpolator.visualize_interpolation(interpolator.interpolate_datasets(df, df, traces_between), df.shape[1],
+                                             df.shape[1] + traces_between)
 
+    btn_visualize.on_clicked(visualize_data)
+    btn_preprocess.on_clicked(preprocess)
     btn_interpolate.on_clicked(interpolate)
     plt.show()
 
