@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.widgets import Button, TextBox, RadioButtons
-from scipy import ndimage
+from scipy import ndimage, interpolate
 from sklearn.preprocessing import MinMaxScaler
 
 
@@ -37,7 +37,6 @@ class DataVisualizer:
         binary_image_quantile = (self.scaled_amplitudes_df.values > threshold).astype(int)
         corroded_image = ndimage.binary_erosion(binary_image_quantile, structure=np.ones((3, 3))).astype(int)
         fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-
         ax = axes[0]
         ax.imshow(binary_image_quantile, cmap='gray', aspect='auto')
         ax.set_title('Квантильный анализ')
@@ -58,21 +57,34 @@ class DataInterpolator:
         self.visualizer = visualizer
 
     @staticmethod
-    def interpolate_datasets(df1, df2, traces_between):
-        if df1.shape[1] != df2.shape[1]:
-            raise ValueError("Datasets must have the same number of traces")
-        total_traces = df1.shape[1] + df2.shape[1] + traces_between
-        interpolated_data = np.zeros((df1.shape[0], total_traces))
-        interpolated_data[:, :df1.shape[1]] = df1.values
-        start_second_dataset = df1.shape[1] + traces_between
-        interpolated_data[:, start_second_dataset:start_second_dataset + df2.shape[1]] = df2.values
+    def interpolate_datasets(df1, df2, traces_between, kind='linear'):
+        # Создание массивов координат x для известных точек df1 и df2
+        x_left = np.arange(df1.shape[1])  # Координаты x для df1
+        x_right = np.arange(df1.shape[1] + traces_between,
+                            df1.shape[1] + traces_between + df2.shape[1])  # Координаты x для df2
+        x_full = np.hstack([x_left, x_right])  # Объединение координат x для обоих df
 
-        start_value = df1.iloc[:, -1]
-        end_value = df2.iloc[:, 0]
+        # Создание пустого массива для хранения интерполированных данных
+        interpolated_data = np.zeros((df1.shape[0], df1.shape[1] + traces_between + df2.shape[1]))
+
+        # Процесс интерполяции для каждой трассы
         for i in range(df1.shape[0]):
-            interpolated_data[i, df1.shape[1]:start_second_dataset] = np.linspace(start_value[i], end_value[i],
-                                                                                  traces_between + 2)[1:-1]
-        return pd.DataFrame(interpolated_data)
+            # Получаем данные для текущей трассы из df1 и df2
+            y_left = df1.iloc[i, :]
+            y_right = df2.iloc[i, :]
+            y_full = np.hstack([y_left, y_right])  # Объединение данных для обоих df
+
+            # Создание функции интерполяции
+            interp_function = interpolate.interp1d(x_full, y_full, kind=kind, fill_value="extrapolate")
+
+            # Создание массива координат x для интерполяции
+            x_interpolated = np.linspace(0, x_full[-1], num=df1.shape[1] + traces_between + df2.shape[1])
+
+            # Выполнение интерполяции и заполнение данных
+            interpolated_data[i, :] = interp_function(x_interpolated)
+
+        # Возвращение DataFrame с интерполированными данными
+        return pd.DataFrame(interpolated_data, index=df1.index)
 
     @staticmethod
     def visualize_interpolation(data, start_interp, end_interp, colormap='gray'):
@@ -93,41 +105,46 @@ def main_interface():
     visualizer.read_from_segy("initial_data/Пресный_водоём.seg")
     visualizer.scale_data()
 
-    plt.figure(figsize=(8, 6))
-    plt.subplots_adjust(left=0.25, right=0.75, bottom=0.25)
+    plt.figure(figsize=(10, 8))
+    plt.subplots_adjust(left=0.25, right=0.75, bottom=0.05, top=0.95)
 
-    rax = plt.axes([0.35, 0.7, 0.3, 0.15])
+    rax = plt.axes([0.3, 0.85, 0.4, 0.05])
     radio = RadioButtons(rax, ['amplitudes_df', 'scaled_amplitudes_df'])
 
-    ax_preprocess = plt.axes([0.35, 0.5, 0.3, 0.075])
-    btn_preprocess = Button(ax_preprocess, 'Preprocess Image')
-
-    ax_visualize = plt.axes([0.35, 0.6, 0.3, 0.075])
+    ax_visualize = plt.axes([0.3, 0.75, 0.4, 0.05])
     btn_visualize = Button(ax_visualize, 'Visualize')
 
-    tbox = plt.axes([0.35, 0.2, 0.3, 0.075])
+    ax_preprocess = plt.axes([0.3, 0.65, 0.4, 0.05])
+    btn_preprocess = Button(ax_preprocess, 'Preprocess Image')
+
+    rax_interpolation = plt.axes([0.3, 0.45, 0.4, 0.15])
+    radio_interpolation = RadioButtons(rax_interpolation, ['linear', 'cubic', 'quadratic', 'nearest'])
+
+    tbox = plt.axes([0.3, 0.35, 0.4, 0.05])
     text_box = TextBox(tbox, 'Traces:', initial="10")
 
-    ax_interpolate = plt.axes([0.35, 0.1, 0.3, 0.075])
+    ax_interpolate = plt.axes([0.3, 0.25, 0.4, 0.05])
     btn_interpolate = Button(ax_interpolate, 'Interpolate')
 
     def visualize_data(_):
         df = visualizer.amplitudes_df if radio.value_selected == 'amplitudes_df' else visualizer.scaled_amplitudes_df
-        DataVisualizer.visualize(df)
+        visualizer.visualize(amplitudes_df=df)
 
     def preprocess(_):
         visualizer.preprocess_image()
 
-    def interpolate(_):
+    def interpolation_process(_):
         traces_between = int(text_box.text)
+        interpolation_method = radio_interpolation.value_selected
         df = visualizer.amplitudes_df if radio.value_selected == 'amplitudes_df' else visualizer.scaled_amplitudes_df
-        DataInterpolator.visualize_interpolation(
-            DataInterpolator.interpolate_datasets(df, df, traces_between),
+        interpolator.visualize_interpolation(
+            interpolator.interpolate_datasets(df, df, traces_between, interpolation_method),
             df.shape[1], df.shape[1] + traces_between)
 
     btn_visualize.on_clicked(visualize_data)
     btn_preprocess.on_clicked(preprocess)
-    btn_interpolate.on_clicked(interpolate)
+    btn_interpolate.on_clicked(interpolation_process)
+
     plt.show()
 
 
