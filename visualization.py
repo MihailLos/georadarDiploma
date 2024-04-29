@@ -8,7 +8,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 
-class Radargramm:
+class RD:
     scaled_amplitudes_df = pd.DataFrame()
     amplitudes_df = pd.DataFrame()
 
