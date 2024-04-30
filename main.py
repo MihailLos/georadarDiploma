@@ -1,5 +1,5 @@
-from GUI.load_gui import LoadRadargrammGUI
+from GUI.main_gui import MainGUI
 
 if __name__ == '__main__':
-    ui = LoadRadargrammGUI()
+    ui = MainGUI()
     ui.run()

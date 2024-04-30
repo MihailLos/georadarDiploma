@@ -1,7 +1,7 @@
 import datetime
 
 from sqlalchemy import Table, MetaData, Integer, Column, Text, Date, LargeBinary, create_engine, Float, ForeignKey, \
-    ARRAY
+    ARRAY, select
 from sqlalchemy.orm import relationship
 
 from database.DB_connect import DBConnector
@@ -53,9 +53,12 @@ class RadargrammTableCompanion:
         return result.fetchall()
 
     def db_read_radaragramm_by_id(self, id):
-        select_query = self.signals_table.select().where(self.signals_table.c.Radargramm_ID == id)
+        select_query = select(self.signals_table.c["Amplitudes"]).where(self.signals_table.c.Radargramm_ID == id)
         result = self.engine.connect().execute(select_query)
-        return result.fetchall()
+        fetch = result.fetchall()
+        first_elem = fetch[0]
+        nested_list = first_elem[0]
+        return nested_list
 
     def db_delete_radargramm_by_id(self, id):
         with self.engine.connect() as conn:
@@ -66,4 +69,11 @@ class RadargrammTableCompanion:
             self.engine.connect().connection.close()
 
             return [True, 'Радарограмма удалена успешно!']
+
+    def db_get_binary_by_id(self, id):
+        select_query = select(self.signals_table.c["File_Contents"]).where(self.signals_table.c.Radargramm_ID == id)
+        result = self.engine.connect().execute(select_query)
+        fetch = result.fetchone()
+
+        return fetch
 
