@@ -2,7 +2,6 @@ import datetime
 
 from sqlalchemy import Table, MetaData, Integer, Column, Text, Date, LargeBinary, create_engine, Float, ForeignKey, \
     ARRAY, select
-from sqlalchemy.orm import relationship
 
 from database.DB_connect import DBConnector
 

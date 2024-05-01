@@ -12,33 +12,6 @@ class RD:
     scaled_amplitudes_df = pd.DataFrame()
     amplitudes_df = pd.DataFrame()
 
-    def read_from_segy(self, filepath):
-        amplitudes = []
-        stream = obspy.read(filepath)
-        for trace in stream:
-            amplitudes.append(trace.data)
-
-        # Преобразуем массивы в DataFrame
-        self.amplitudes_df = pd.DataFrame(amplitudes)
-
-    def visualize(self, amplitudes_df, colormap='rainbow', amplitude_range=None):
-        fig, ax = plt.subplots(figsize=(10, 6))
-
-        amplitudes = amplitudes_df.values  # Преобразуем DataFrame обратно в массив numpy
-
-        if amplitude_range is not None:
-            min_amplitude, max_amplitude = amplitude_range
-            amplitudes = np.clip(amplitudes, min_amplitude, max_amplitude)
-
-        time_labels = np.linspace(0, len(amplitudes[0]), len(amplitudes[0]))
-        im = ax.imshow(amplitudes.T, cmap=colormap, aspect='auto',
-                       extent=[0, len(amplitudes), time_labels[-1], time_labels[0]])
-        plt.colorbar(im, label='Амплитуда сигнала')
-        plt.xlabel('Трассы')
-        plt.ylabel('Измерения')
-        plt.title('Радарограмма')
-        plt.show()
-
     def scale_data(self):
         scaler = MinMaxScaler()
         self.scaled_amplitudes_df = pd.DataFrame(scaler.fit_transform(self.amplitudes_df))
