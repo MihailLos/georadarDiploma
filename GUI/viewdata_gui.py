@@ -15,10 +15,13 @@ class ViewDataGUI:
                                                                    'Количество трасс', 'Количество измерений'],
                       display_row_numbers=False, auto_size_columns=True,
                       num_rows=min(20, len(self.get_radargramm_data())),
-                      key="-TABLE-", enable_events=True)],
-            [sg.Button("Удалить радарограмму")]
+                      key="-TABLE-", enable_events=True,)],
+            [sg.Button("Удалить радарограмму", key='-DELETE_DATA-')]
         ]
-        return layout
+        scrollable_layout = [
+            [sg.Column(layout, scrollable=True, vertical_scroll_only=True, size=(1920, 1080))]
+        ]
+        return scrollable_layout
 
     def get_radargramm_data(self):
         radargramms = self.radargramm_companion.db_read_radargramms()

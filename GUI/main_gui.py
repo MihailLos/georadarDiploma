@@ -2,33 +2,38 @@ import PySimpleGUI as sg
 
 from GUI.load_gui import LoadRadargrammGUI
 from GUI.viewdata_gui import ViewDataGUI
+from GUI.visualization_gui import VisualizationGUI
 
 
 class MainGUI:
     def __init__(self):
         self.load_radargramm_gui = LoadRadargrammGUI()
         self.view_data_gui = ViewDataGUI()
+        self.visualization_gui = VisualizationGUI()
 
         self.layout = [
             [sg.TabGroup(
                 [[
-                    sg.Tab("Загрузка данных", self.load_radargramm_gui.make_layout()),
-                    sg.Tab("Просмотр данных", self.view_data_gui.make_layout())
+                    sg.Tab("Загрузка данных", self.load_radargramm_gui.make_layout(), key='-LOAD_DATA_TAB-'),
+                    sg.Tab("Просмотр данных", self.view_data_gui.make_layout(), key='-VIEW_DATA_TAB-'),
+                    sg.Tab("Визуализация данных (ручная)", self.visualization_gui.make_layout(), key='-HANDLE_VISUALIZE_TAB-')
                 ]],
-                key="-TABGROUP-",
+                key='-TAB_GROUP-',
                 enable_events=True,
-                tab_location="topleft"
+                tab_location="topleft",
             )]
         ]
 
         self.window = sg.Window('Главное окно', self.layout, resizable=True, finalize=True)
 
     def run(self):
+        self.visualization_gui.get_radargramm_data()
+        self.window['-RADARGRAMM_LIST-'].update(values=self.visualization_gui.radargramm_list)
         while True:
             event, values = self.window.read()
             if event == sg.WINDOW_CLOSED:
                 break
-            elif event == "Удалить радарограмму":
+            elif event == '-DELETE_DATA-':
                 selected_rows = values['-TABLE-']
                 if selected_rows:
                     selected_radargramm_id = self.view_data_gui.get_radargramm_data()[selected_rows[0]][0]
@@ -37,6 +42,9 @@ class MainGUI:
                         self.view_data_gui.radargramm_companion.db_delete_radargramm_by_id(id=selected_radargramm_id)
                         sg.popup("Радарограмма успешно удалена.")
                         self.window['-TABLE-'].update(values=self.view_data_gui.get_radargramm_data())
+                        self.visualization_gui.get_radargramm_data()
+                        self.window['-RADARGRAMM_LIST-'].update(values=self.visualization_gui.radargramm_list)
+            # Экран загрузки радарограмм
             elif event == "Загрузить данные":
                 file_path = values['-FILE-']
                 radargramm_name = values['-NAME-']
@@ -49,6 +57,8 @@ class MainGUI:
                     continue
                 self.load_radargramm_gui.radargramm.load_data(file=file_path, name=radargramm_name)
                 self.window['-TABLE-'].update(values=self.view_data_gui.get_radargramm_data())
+                self.visualization_gui.get_radargramm_data()
+                self.window['-RADARGRAMM_LIST-'].update(values=self.visualization_gui.radargramm_list)
                 self.window['-PROGRESS-'].update(visible=True)
                 for i in range(1000):
                     sg.one_line_progress_meter('Загрузка', i + 1, 1000, '-PROGRESS-')
@@ -56,4 +66,53 @@ class MainGUI:
                 self.window['-FILE-'].update('')
                 self.window['-NAME-'].update('')
                 self.window['-PROGRESS-'].update(visible=False)
+            elif event == '-RADARGRAMM_LIST-':
+                selected_radargramm = values["-RADARGRAMM_LIST-"]
+                if selected_radargramm:
+                    selected_id = selected_radargramm[0]
+                    self.visualization_gui.get_amplitudes_by_id(selected_id)
+            elif event == '-VISUALIZE_DATA-':
+                if self.visualization_gui.chosen_radargramm_amplitudes is None:
+                    sg.popup_error("Выберите радарограмму для визуализации!")
+                else:
+                    self.visualization_gui.update_sliders()
+                    self.window['-MIN_AMPL_SLIDER-'].update(range=(self.visualization_gui.lower_diap, self.visualization_gui.avg_diap))
+                    self.window['-MAX_AMPL_SLIDER-'].update(range=(self.visualization_gui.avg_diap, self.visualization_gui.upper_diap))
+                    self.visualization_gui.selected_colormap = self.visualization_gui.colormaps_list.get(values['-COLORMAP_LIST-'])
+                    self.visualization_gui.visualizator.make_radargramm_image(self.visualization_gui.chosen_radargramm_amplitudes,
+                                                                        colormap=self.visualization_gui.selected_colormap)
+                    self.visualization_gui.canvas_elem = self.window['-CANVAS-'].TKCanvas
+                    self.visualization_gui.visualizator.show_radargramm_image(self.visualization_gui.canvas_elem)
+                    self.window['-CHOOSE_COLORSCHEME_TEXT-'].update(visible=True)
+                    self.window['-COLORMAP_LIST-'].update(visible=True)
+                    self.window['-DB_SAVE_VISUALIZATION-'].update(visible=True)
+                    self.window['-CHANGE_AMPL_DIAP_TEXT-'].update(visible=True)
+                    self.window['-MIN_AMPL_SLIDER_LABEL-'].update(visible=True)
+                    self.window['-MIN_AMPL_SLIDER-'].update(visible=True)
+                    self.window['-MAX_AMPL_SLIDER_LABEL-'].update(visible=True)
+                    self.window['-MAX_AMPL_SLIDER-'].update(visible=True)
+            elif event == '-COLORMAP_LIST-':
+                selected_colorscheme = values['-COLORMAP_LIST-']
+                self.visualization_gui.selected_colormap = self.visualization_gui.colormaps_list.get(selected_colorscheme)
+                if self.visualization_gui.selected_colormap is not None:
+                    self.visualization_gui.visualizator.make_radargramm_image(self.visualization_gui.chosen_radargramm_amplitudes,
+                                                                        colormap=self.visualization_gui.selected_colormap)
+                    canvas_elem = self.window['-CANVAS-'].TKCanvas
+                    self.visualization_gui.visualizator.show_radargramm_image(canvas_elem)
+            elif event == '-MIN_AMPL_SLIDER-' or event == '-MAX_AMPL_SLIDER-':
+                self.visualization_gui.lower_diap = values['-MIN_AMPL_SLIDER-']
+                self.visualization_gui.upper_diap = values['-MAX_AMPL_SLIDER-']
+                self.visualization_gui.visualizator.make_radargramm_image(self.visualization_gui.chosen_radargramm_amplitudes,
+                                                                    colormap=self.visualization_gui.selected_colormap,
+                                                                    lower_limit=self.visualization_gui.lower_diap,
+                                                                    upper_limit=self.visualization_gui.upper_diap)
+                canvas_elem = self.window['-CANVAS-'].TKCanvas
+                self.visualization_gui.visualizator.show_radargramm_image(canvas_elem)
+            elif event == '-DB_SAVE_VISUALIZATION-':
+                self.visualization_gui.visualizator.db_save(colormap=self.visualization_gui.selected_colormap,
+                                                      img_file=self.visualization_gui.visualizator.get_bytes_from_image(),
+                                                      upper_limit=self.visualization_gui.upper_diap,
+                                                      lower_limit=self.visualization_gui.lower_diap,
+                                                      radargramm_id=values['-RADARGRAMM_LIST-'][0])
+                sg.popup('Данные успешно загружены.')
         self.window.close()
