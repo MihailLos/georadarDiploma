@@ -1,6 +1,7 @@
 import PySimpleGUI as sg
 
 from GUI.load_gui import LoadRadargrammGUI
+from GUI.preprocessor_gui import PreprocessorGUI
 from GUI.viewdata_gui import ViewDataGUI
 from GUI.visualization_gui import VisualizationGUI
 
@@ -10,13 +11,17 @@ class MainGUI:
         self.load_radargramm_gui = LoadRadargrammGUI()
         self.view_data_gui = ViewDataGUI()
         self.visualization_gui = VisualizationGUI()
+        self.preprocessor_gui = PreprocessorGUI()
 
         self.layout = [
             [sg.TabGroup(
                 [[
                     sg.Tab("Загрузка данных", self.load_radargramm_gui.make_layout(), key='-LOAD_DATA_TAB-'),
                     sg.Tab("Просмотр данных", self.view_data_gui.make_layout(), key='-VIEW_DATA_TAB-'),
-                    sg.Tab("Визуализация данных (ручная)", self.visualization_gui.make_layout(), key='-HANDLE_VISUALIZE_TAB-')
+                    sg.Tab("Визуализация данных (ручная)", self.visualization_gui.make_layout(),
+                           key='-HANDLE_VISUALIZE_TAB-'),
+                    sg.Tab("Автоматическое обнаружение аномалий", self.preprocessor_gui.make_layout(),
+                           key='-AUTO_ANOMALIES_RECOGNIZE-')
                 ]],
                 key='-TAB_GROUP-',
                 enable_events=True,
@@ -28,11 +33,14 @@ class MainGUI:
 
     def run(self):
         self.visualization_gui.get_radargramm_data()
+        self.preprocessor_gui.get_radargramm_data()
         self.window['-RADARGRAMM_LIST-'].update(values=self.visualization_gui.radargramm_list)
+        self.window['-RADARGRAMM_LIST2-'].update(values=self.preprocessor_gui.radargramm_list)
         while True:
             event, values = self.window.read()
             if event == sg.WINDOW_CLOSED:
                 break
+            # Экран просмотра и удаления радарограмм
             elif event == '-DELETE_DATA-':
                 selected_rows = values['-TABLE-']
                 if selected_rows:
@@ -66,6 +74,7 @@ class MainGUI:
                 self.window['-FILE-'].update('')
                 self.window['-NAME-'].update('')
                 self.window['-PROGRESS-'].update(visible=False)
+            # Экран предобработки данных
             elif event == '-RADARGRAMM_LIST-':
                 selected_radargramm = values["-RADARGRAMM_LIST-"]
                 if selected_radargramm:
@@ -115,4 +124,76 @@ class MainGUI:
                                                       lower_limit=self.visualization_gui.lower_diap,
                                                       radargramm_id=values['-RADARGRAMM_LIST-'][0])
                 sg.popup('Данные успешно загружены.')
+            elif event == '-RADARGRAMM_LIST2-':
+                selected_radargramm = values["-RADARGRAMM_LIST2-"]
+                if selected_radargramm:
+                    self.selected_radargramm_id = selected_radargramm[0]
+                    self.preprocessor_gui.get_amplitudes_by_id(self.selected_radargramm_id)
+            elif event == '-SCALE_DATA-':
+                if self.preprocessor_gui.chosen_radargramm_amplitudes is None:
+                    sg.popup_error("Выберите набор данных для предобработки!")
+                else:
+                    self.preprocessor_gui.preprocessor.scale_data(self.preprocessor_gui.chosen_radargramm_amplitudes)
+                    self.selected_colormap = self.preprocessor_gui.colormaps_list.get(
+                        values['-COLORMAP_LIST2-'])
+                    self.preprocessor_gui.visualizator.make_radargramm_image(self.preprocessor_gui.preprocessor.scaled_amplitudes,
+                                                                             colormap=self.selected_colormap)
+                    self.canvas_elem = self.window['-CANVAS2-'].TKCanvas
+                    self.preprocessor_gui.visualizator.show_radargramm_image(self.canvas_elem)
+                    self.window['-CHOOSE_COLORSCHEME_TEXT2-'].update(visible=True)
+                    self.window['-CHOOSE_PREPROCESS_TEXT-'].update(visible=True)
+                    self.window['-COLORMAP_LIST2-'].update(visible=True)
+                    self.window['-QUANTILE_ANALYZE-'].update(visible=True)
+                    self.window['-CORRODE_ANALYZE-'].update(visible=True)
+                    self.window['-EXPAND_ANALYZE-'].update(visible=True)
+            elif event == '-COLORMAP_LIST2-':
+                selected_colorscheme = values['-COLORMAP_LIST2-']
+                self.selected_colormap = self.preprocessor_gui.colormaps_list.get(selected_colorscheme)
+                if self.selected_colormap is not None:
+                    self.preprocessor_gui.visualizator.make_radargramm_image(self.preprocessor_gui.preprocessor.scaled_amplitudes,
+                                                                        colormap=self.selected_colormap)
+                    canvas_elem = self.window['-CANVAS2-'].TKCanvas
+                    self.preprocessor_gui.visualizator.show_radargramm_image(canvas_elem)
+            elif event == '-QUANTILE_ANALYZE-':
+                self.preprocessor_gui.preprocessor.quantile_analyze()
+                selected_colorscheme = values['-COLORMAP_LIST2-']
+                self.selected_colormap = self.preprocessor_gui.colormaps_list.get(selected_colorscheme)
+                if self.selected_colormap is not None:
+                    self.preprocessor_gui.visualizator.make_radargramm_image(self.preprocessor_gui.preprocessor.quantile_filtered_amplitudes,
+                                                            colormap=self.selected_colormap)
+                    canvas_elem = self.window['-CANVAS2-'].TKCanvas
+                    self.preprocessor_gui.visualizator.show_radargramm_image(canvas_elem)
+                self.window['-SAVE_PREPROCESS_TO_DB-'].update(visible=True)
+            elif event == '-CORRODE_ANALYZE-':
+                self.preprocessor_gui.preprocessor.corrode_image()
+                selected_colorscheme = values['-COLORMAP_LIST2-']
+                self.selected_colormap = self.preprocessor_gui.colormaps_list.get(selected_colorscheme)
+                if self.selected_colormap is not None:
+                    self.preprocessor_gui.visualizator.make_radargramm_image(self.preprocessor_gui.preprocessor.corrode_filtered_amplitudes,
+                                                            colormap=self.selected_colormap)
+                    canvas_elem = self.window['-CANVAS2-'].TKCanvas
+                    self.preprocessor_gui.visualizator.show_radargramm_image(canvas_elem)
+                self.window['-SAVE_PREPROCESS_TO_DB-'].update(visible=True)
+            elif event == '-EXPAND_ANALYZE-':
+                self.preprocessor_gui.preprocessor.expand_image()
+                selected_colorscheme = values['-COLORMAP_LIST2-']
+                self.selected_colormap = self.preprocessor_gui.colormaps_list.get(selected_colorscheme)
+                if self.selected_colormap is not None:
+                    self.preprocessor_gui.visualizator.make_radargramm_image(self.preprocessor_gui.preprocessor.expand_filtered_amplitudes,
+                                                            colormap=self.selected_colormap)
+                    canvas_elem = self.window['-CANVAS2-'].TKCanvas
+                    self.preprocessor_gui.visualizator.show_radargramm_image(canvas_elem)
+                self.window['-SAVE_PREPROCESS_TO_DB-'].update(visible=True)
+            elif event == '-SAVE_PREPROCESS_TO_DB-':
+                decision = sg.popup_ok_cancel('Загружаемые данные будут задействованы при создании модели обнаружения аномалий '
+                                   'на радарограмме! В дальнейшем вы можете удалить неактуальные данные.',
+                                              title='Предупреждение')
+                if decision == 'OK':
+                    text = sg.popup_get_text('Введите название сохраняемых данных для удобства поиска:',
+                                             title='Ввод названия')
+                    self.preprocessor_gui.preprocessor_companion.db_save(text,
+                                                        self.preprocessor_gui.preprocessor.interprete_results(self.selected_radargramm_id),
+                                                        self.preprocessor_gui.visualizator.get_bytes_from_image(),
+                                                        self.selected_radargramm_id)
+                    sg.popup('Данные успешно загружены!')
         self.window.close()
