@@ -8,7 +8,7 @@ from database.DB_connect import DBConnector
 
 class RadargrammTableCompanion:
     metadata = MetaData()
-    engine = create_engine(DBConnector.db_uri)
+    engine = create_engine(DBConnector.db_uri, future=True)
     radargramm_table = Table('radargramms', metadata,
                              Column('ID', Integer, primary_key=True),
                              Column('Load_Date', Date),

@@ -1,5 +1,6 @@
 import PySimpleGUI as sg
 
+from GUI.interpolation_gui import InterpolationGUI
 from GUI.load_gui import LoadRadargrammGUI
 from GUI.preprocessor_gui import PreprocessorGUI
 from GUI.viewdata_gui import ViewDataGUI
@@ -12,6 +13,7 @@ class MainGUI:
         self.view_data_gui = ViewDataGUI()
         self.visualization_gui = VisualizationGUI()
         self.preprocessor_gui = PreprocessorGUI()
+        self.interpolation_gui = InterpolationGUI()
 
         self.layout = [
             [sg.TabGroup(
@@ -21,7 +23,8 @@ class MainGUI:
                     sg.Tab("Визуализация данных (ручная)", self.visualization_gui.make_layout(),
                            key='-HANDLE_VISUALIZE_TAB-'),
                     sg.Tab("Автоматическое обнаружение аномалий", self.preprocessor_gui.make_layout(),
-                           key='-AUTO_ANOMALIES_RECOGNIZE-')
+                           key='-AUTO_ANOMALIES_RECOGNIZE-'),
+                    sg.Tab("Интерполяция", self.interpolation_gui.make_layout(), key="-INTERPOLATION-")
                 ]],
                 key='-TAB_GROUP-',
                 enable_events=True,
@@ -34,8 +37,11 @@ class MainGUI:
     def run(self):
         self.visualization_gui.get_radargramm_data()
         self.preprocessor_gui.get_radargramm_data()
+        self.interpolation_gui.get_radargramm_data()
         self.window['-RADARGRAMM_LIST-'].update(values=self.visualization_gui.radargramm_list)
         self.window['-RADARGRAMM_LIST2-'].update(values=self.preprocessor_gui.radargramm_list)
+        self.window['-RADARGRAMM_LIST3-'].update(values=self.interpolation_gui.radargramm_list)
+        self.window['-RADARGRAMM_LIST4-'].update(values=self.interpolation_gui.radargramm_list)
         while True:
             event, values = self.window.read()
             if event == sg.WINDOW_CLOSED:
@@ -52,6 +58,9 @@ class MainGUI:
                         self.window['-TABLE-'].update(values=self.view_data_gui.get_radargramm_data())
                         self.visualization_gui.get_radargramm_data()
                         self.window['-RADARGRAMM_LIST-'].update(values=self.visualization_gui.radargramm_list)
+                        self.window['-RADARGRAMM_LIST2-'].update(values=self.visualization_gui.radargramm_list)
+                        self.window['-RADARGRAMM_LIST3-'].update(values=self.visualization_gui.radargramm_list)
+                        self.window['-RADARGRAMM_LIST4-'].update(values=self.visualization_gui.radargramm_list)
             # Экран загрузки радарограмм
             elif event == "Загрузить данные":
                 file_path = values['-FILE-']
@@ -67,6 +76,9 @@ class MainGUI:
                 self.window['-TABLE-'].update(values=self.view_data_gui.get_radargramm_data())
                 self.visualization_gui.get_radargramm_data()
                 self.window['-RADARGRAMM_LIST-'].update(values=self.visualization_gui.radargramm_list)
+                self.window['-RADARGRAMM_LIST2-'].update(values=self.visualization_gui.radargramm_list)
+                self.window['-RADARGRAMM_LIST3-'].update(values=self.visualization_gui.radargramm_list)
+                self.window['-RADARGRAMM_LIST4-'].update(values=self.visualization_gui.radargramm_list)
                 self.window['-PROGRESS-'].update(visible=True)
                 for i in range(1000):
                     sg.one_line_progress_meter('Загрузка', i + 1, 1000, '-PROGRESS-')
@@ -146,6 +158,41 @@ class MainGUI:
                     self.window['-QUANTILE_ANALYZE-'].update(visible=True)
                     self.window['-CORRODE_ANALYZE-'].update(visible=True)
                     self.window['-EXPAND_ANALYZE-'].update(visible=True)
+            # Экран интерполяции
+            elif event == '-RADARGRAMM_LIST3-':
+                selected_radargramm = values["-RADARGRAMM_LIST3-"]
+                if selected_radargramm:
+                    selected_id = selected_radargramm[0]
+                    self.interpolation_gui.get_amplitudes_by_id(selected_id)
+            elif event == '-RADARGRAMM_LIST4-':
+                selected_radargramm = values["-RADARGRAMM_LIST4-"]
+                if selected_radargramm:
+                    selected_id = selected_radargramm[0]
+                    self.interpolation_gui.get_amplitudes_second_by_id(selected_id)
+            elif event == '-DATA_INTERPOLATION-':
+                if self.interpolation_gui.chosen_radargramm_amplitudes is None or self.interpolation_gui.chosen_second_radargramm_amplitudes is None:
+                    sg.popup_error("Выберите радарограмму для визуализации!")
+                else:
+                    selected_colorscheme = values['-COLORMAP_LIST3-']
+                    self.selected_colormap = self.preprocessor_gui.colormaps_list.get(selected_colorscheme)
+                    self.interpolation_gui.visualizator.make_radargramm_images(
+                        amplitudes1=self.interpolation_gui.chosen_radargramm_amplitudes,
+                        amplitudes2=self.interpolation_gui.chosen_second_radargramm_amplitudes,
+                        colormap=self.selected_colormap)
+                    self.interpolation_gui.canvas_elem = self.window['-CANVAS3-'].TKCanvas
+                    self.interpolation_gui.visualizator.show_radargramm_image(self.interpolation_gui.canvas_elem)
+                    self.window['-CHOOSE_COLORSCHEME_TEXT3-'].update(visible=True)
+                    self.window['-COLORMAP_LIST3-'].update(visible=True)
+            elif event == '-COLORMAP_LIST3-':
+                selected_colorscheme = values['-COLORMAP_LIST3-']
+                self.selected_colormap = self.interpolation_gui.colormaps_list.get(selected_colorscheme)
+                if self.selected_colormap is not None and self.interpolation_gui.chosen_radargramm_amplitudes is not None and self.interpolation_gui.chosen_second_radargramm_amplitudes is not None:
+                    self.interpolation_gui.visualizator.make_radargramm_images(
+                        amplitudes1=self.interpolation_gui.chosen_radargramm_amplitudes,
+                        amplitudes2=self.interpolation_gui.chosen_second_radargramm_amplitudes,
+                        colormap=self.selected_colormap)
+                    canvas_elem = self.window['-CANVAS3-'].TKCanvas
+                    self.interpolation_gui.visualizator.show_radargramm_image(canvas_elem)
             elif event == '-COLORMAP_LIST2-':
                 selected_colorscheme = values['-COLORMAP_LIST2-']
                 self.selected_colormap = self.preprocessor_gui.colormaps_list.get(selected_colorscheme)
