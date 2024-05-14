@@ -175,8 +175,13 @@ class MainGUI:
                 else:
                     selected_colorscheme = values['-COLORMAP_LIST3-']
                     self.selected_colormap = self.preprocessor_gui.colormaps_list.get(selected_colorscheme)
+                    interpolated_amplitudes = self.interpolation_gui.interpolation.interpolated_amplitudes(
+                        amplitudes1=self.interpolation_gui.chosen_radargramm_amplitudes,
+                        amplitudes2=self.interpolation_gui.chosen_second_radargramm_amplitudes,
+                    )
                     self.interpolation_gui.visualizator.make_radargramm_images(
                         amplitudes1=self.interpolation_gui.chosen_radargramm_amplitudes,
+                        interpolated_amplitudes=interpolated_amplitudes,
                         amplitudes2=self.interpolation_gui.chosen_second_radargramm_amplitudes,
                         colormap=self.selected_colormap)
                     self.interpolation_gui.canvas_elem = self.window['-CANVAS3-'].TKCanvas
@@ -187,8 +192,13 @@ class MainGUI:
                 selected_colorscheme = values['-COLORMAP_LIST3-']
                 self.selected_colormap = self.interpolation_gui.colormaps_list.get(selected_colorscheme)
                 if self.selected_colormap is not None and self.interpolation_gui.chosen_radargramm_amplitudes is not None and self.interpolation_gui.chosen_second_radargramm_amplitudes is not None:
+                    interpolated_amplitudes = self.interpolation_gui.interpolation.interpolated_amplitudes(
+                        amplitudes1=self.interpolation_gui.chosen_radargramm_amplitudes,
+                        amplitudes2=self.interpolation_gui.chosen_second_radargramm_amplitudes,
+                    )
                     self.interpolation_gui.visualizator.make_radargramm_images(
                         amplitudes1=self.interpolation_gui.chosen_radargramm_amplitudes,
+                        interpolated_amplitudes=interpolated_amplitudes,
                         amplitudes2=self.interpolation_gui.chosen_second_radargramm_amplitudes,
                         colormap=self.selected_colormap)
                     canvas_elem = self.window['-CANVAS3-'].TKCanvas

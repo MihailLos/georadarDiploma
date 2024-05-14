@@ -46,9 +46,10 @@ class Visualizator:
         self.upper_limit = upper_limit
         self.lower_limit = lower_limit
 
-    def make_radargramm_images(self, amplitudes1, amplitudes2, colormap='gray', upper_limit=None, lower_limit=None):
-        self.fig = Figure(figsize=(16, 8))  # Увеличиваем размер, чтобы поместить два графика
-        axes = self.fig.subplots(1, 2)  # Создаем два подграфика
+    def make_radargramm_images(self, amplitudes1, interpolated_amplitudes, amplitudes2, colormap='gray',
+                               upper_limit=None, lower_limit=None):
+        self.fig = Figure(figsize=(20, 6))  # Увеличиваем размер, чтобы поместить три графика
+        axes = self.fig.subplots(1, 3)  # Создаем три подграфика
 
         # Обрабатываем первую радарограмму
         amplitudes_array1 = np.array(amplitudes1)
@@ -61,19 +62,31 @@ class Visualizator:
         axes[0].set_xlabel('Трассы')
         axes[0].set_ylabel('Измерения')
 
-        # Обрабатываем вторую радарограмму
-        amplitudes_array2 = np.array(amplitudes2)
+        # Обрабатываем интерполированную радарограмму
+        amplitudes_array2 = np.array(interpolated_amplitudes)
         if upper_limit is not None and lower_limit is not None:
             amplitudes_array2 = np.clip(amplitudes_array2, lower_limit, upper_limit)
         time_labels2 = np.linspace(0, len(amplitudes_array2[0]), len(amplitudes_array2[0]))
         im2 = axes[1].imshow(amplitudes_array2.T, cmap=colormap, aspect='auto',
                              extent=[0, len(amplitudes_array2), time_labels2[-1], time_labels2[0]])
-        axes[1].set_title('Радарограмма 2')
+        axes[1].set_title('Интерполированная Радарограмма')
         axes[1].set_xlabel('Трассы')
         axes[1].set_ylabel('Измерения')
 
-        self.fig.colorbar(im1, ax=axes[0], label='Амплитуда сигнала')
-        self.fig.colorbar(im2, ax=axes[1], label='Амплитуда сигнала')
+        # Обрабатываем вторую радарограмму
+        amplitudes_array3 = np.array(amplitudes2)
+        if upper_limit is not None and lower_limit is not None:
+            amplitudes_array3 = np.clip(amplitudes_array3, lower_limit, upper_limit)
+        time_labels2 = np.linspace(0, len(amplitudes_array3[0]), len(amplitudes_array3[0]))
+        im3 = axes[2].imshow(amplitudes_array3.T, cmap=colormap, aspect='auto',
+                             extent=[0, len(amplitudes_array3), time_labels2[-1], time_labels2[0]])
+        axes[2].set_title('Радарограмма 2')
+        axes[2].set_xlabel('Трассы')
+        axes[2].set_ylabel('Измерения')
+
+        # Добавляем цветовые шкалы для каждой из радарограмм
+        for ax, im in zip(axes, [im1, im2, im3]):
+            self.fig.colorbar(im, ax=ax, label='Амплитуда сигнала')
 
     def show_radargramm_image(self, canvas):
         # Удаляем все виджеты из канваса
