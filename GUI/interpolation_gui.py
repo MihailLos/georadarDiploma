@@ -28,6 +28,8 @@ class InterpolationGUI:
         self.chosen_radargramm_amplitudes = None
         self.chosen_second_radargramm_amplitudes = None
         self.radargramm_companion = RadargrammTableCompanion()
+        self.lower_diap = 0
+        self.upper_diap = 0
 
     def make_layout(self):
         layout = [
@@ -42,6 +44,7 @@ class InterpolationGUI:
                      key='-CHOOSE_COLORSCHEME_TEXT3-')],
             [sg.DropDown(self.colormap_names, key="-COLORMAP_LIST3-", enable_events=True, readonly=True,
                          default_value='Черно-белый спектр', visible=False)],
+            [sg.Button("Сохранить файл визуализации в базу данных", key='-DB_SAVE_VISUALIZATION2-', visible=False)]
         ]
 
         scrollable_layout = [

@@ -49,44 +49,34 @@ class Visualizator:
     def make_radargramm_images(self, amplitudes1, interpolated_amplitudes, amplitudes2, colormap='gray',
                                upper_limit=None, lower_limit=None):
         self.fig = Figure(figsize=(20, 6))  # Увеличиваем размер, чтобы поместить три графика
-        axes = self.fig.subplots(1, 3)  # Создаем три подграфика
+        ax = self.fig.add_subplot(111)  # Используем один подграфик для объединения изображений
 
-        # Обрабатываем первую радарограмму
-        amplitudes_array1 = np.array(amplitudes1)
+        # Преобразование списков в массивы NumPy и транспонирование
+        amp1 = np.array(amplitudes1).T
+        amp2 = np.array(interpolated_amplitudes).T
+        amp3 = np.array(amplitudes2).T
+
+        # Применение ограничений, если указаны
         if upper_limit is not None and lower_limit is not None:
-            amplitudes_array1 = np.clip(amplitudes_array1, lower_limit, upper_limit)
-        time_labels1 = np.linspace(0, len(amplitudes_array1[0]), len(amplitudes_array1[0]))
-        im1 = axes[0].imshow(amplitudes_array1.T, cmap=colormap, aspect='auto',
-                             extent=[0, len(amplitudes_array1), time_labels1[-1], time_labels1[0]])
-        axes[0].set_title('Радарограмма 1')
-        axes[0].set_xlabel('Трассы')
-        axes[0].set_ylabel('Измерения')
+            amp1 = np.clip(amp1, lower_limit, upper_limit)
+            amp2 = np.clip(amp2, lower_limit, upper_limit)
+            amp3 = np.clip(amp3, lower_limit, upper_limit)
 
-        # Обрабатываем интерполированную радарограмму
-        amplitudes_array2 = np.array(interpolated_amplitudes)
-        if upper_limit is not None and lower_limit is not None:
-            amplitudes_array2 = np.clip(amplitudes_array2, lower_limit, upper_limit)
-        time_labels2 = np.linspace(0, len(amplitudes_array2[0]), len(amplitudes_array2[0]))
-        im2 = axes[1].imshow(amplitudes_array2.T, cmap=colormap, aspect='auto',
-                             extent=[0, len(amplitudes_array2), time_labels2[-1], time_labels2[0]])
-        axes[1].set_title('Интерполированная Радарограмма')
-        axes[1].set_xlabel('Трассы')
-        axes[1].set_ylabel('Измерения')
+        # Горизонтальное объединение массивов
+        combined = np.hstack([amp1, amp2, amp3])
 
-        # Обрабатываем вторую радарограмму
-        amplitudes_array3 = np.array(amplitudes2)
-        if upper_limit is not None and lower_limit is not None:
-            amplitudes_array3 = np.clip(amplitudes_array3, lower_limit, upper_limit)
-        time_labels2 = np.linspace(0, len(amplitudes_array3[0]), len(amplitudes_array3[0]))
-        im3 = axes[2].imshow(amplitudes_array3.T, cmap=colormap, aspect='auto',
-                             extent=[0, len(amplitudes_array3), time_labels2[-1], time_labels2[0]])
-        axes[2].set_title('Радарограмма 2')
-        axes[2].set_xlabel('Трассы')
-        axes[2].set_ylabel('Измерения')
+        # Визуализация объединенных данных
+        im = ax.imshow(combined, cmap=colormap, aspect='auto')
+        self.fig.colorbar(im, ax=ax, label='Амплитуда сигнала')
+        ax.set_title('Интерполированная радарограмма')
+        ax.set_xlabel('Трассы')
+        ax.set_ylabel('Измерения')
 
-        # Добавляем цветовые шкалы для каждой из радарограмм
-        for ax, im in zip(axes, [im1, im2, im3]):
-            self.fig.colorbar(im, ax=ax, label='Амплитуда сигнала')
+        # Определение и визуализация границ интерполяции
+        left_border = amp1.shape[1]
+        right_border = left_border + amp2.shape[1]
+        ax.axvline(x=left_border, color='red', linestyle='-', linewidth=1)  # Левая граница интерполяции
+        ax.axvline(x=right_border, color='red', linestyle='-', linewidth=1)  # Правая граница интерполяции
 
     def show_radargramm_image(self, canvas):
         # Удаляем все виджеты из канваса

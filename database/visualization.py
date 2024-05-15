@@ -6,7 +6,7 @@ from database.DB_connect import DBConnector
 
 class VisualizationResultsTableCompanion:
     metadata = MetaData()
-    engine = create_engine(DBConnector.db_uri)
+    engine = create_engine(DBConnector.db_uri, future=True)
 
     visualization_results_table = Table('visualization_results', metadata,
                                         Column('ID', Integer, primary_key=True),

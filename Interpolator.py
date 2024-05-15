@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+
 class Interpolator:
     def __init__(self):
         self.extracted_amplitude_dataframes = []
@@ -28,23 +29,24 @@ class Interpolator:
         if isinstance(amplitudes2, list):
             amplitudes2 = pd.DataFrame(amplitudes2)
 
-        min_num_samples = min(amplitudes1.shape[0], amplitudes2.shape[0], num_samples)
-        num_traces = min(amplitudes1.shape[1], amplitudes2.shape[1])
-        interpolated_amplitudes = np.zeros((min_num_samples, num_traces))
+        if amplitudes1.shape[1] != amplitudes2.shape[1]:
+            return None
 
-        for trace in range(num_traces):
-            y1 = amplitudes1.iloc[:, trace].values[:min_num_samples]
-            y2 = amplitudes2.iloc[:, trace].values[:min_num_samples]
+        interpolated_amplitudes = pd.DataFrame()
 
-            x1 = np.linspace(0, 1, min_num_samples)
-            x2 = np.linspace(0, 1, min_num_samples)
-            x_new = np.linspace(0, 1, min_num_samples)
+        for col in amplitudes1.columns:
+            x1 = np.linspace(0, 1, len(amplitudes1))
+            y1 = amplitudes1[col].values
+            x2 = np.linspace(0, 1, len(amplitudes2))
+            y2 = amplitudes2[col].values
 
-            interpolated_values = np.array([
-                Interpolator.lagrange_polynomial(x1, y1, x) for x in x_new
-            ])
+            x_new = np.linspace(0, 1, num_samples)
 
-            interpolated_amplitudes[:, trace] = interpolated_values
+            coeffs = np.polyfit(np.concatenate((x1, x2)), np.concatenate((y1, y2)), deg=24)
+            poly_func = np.poly1d(coeffs)
 
-        return pd.DataFrame(interpolated_amplitudes, columns=amplitudes1.columns[:num_traces])
+            interpolated_values = poly_func(x_new)
 
+            interpolated_amplitudes[col] = interpolated_values
+
+        return interpolated_amplitudes

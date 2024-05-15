@@ -179,15 +179,19 @@ class MainGUI:
                         amplitudes1=self.interpolation_gui.chosen_radargramm_amplitudes,
                         amplitudes2=self.interpolation_gui.chosen_second_radargramm_amplitudes,
                     )
-                    self.interpolation_gui.visualizator.make_radargramm_images(
-                        amplitudes1=self.interpolation_gui.chosen_radargramm_amplitudes,
-                        interpolated_amplitudes=interpolated_amplitudes,
-                        amplitudes2=self.interpolation_gui.chosen_second_radargramm_amplitudes,
-                        colormap=self.selected_colormap)
-                    self.interpolation_gui.canvas_elem = self.window['-CANVAS3-'].TKCanvas
-                    self.interpolation_gui.visualizator.show_radargramm_image(self.interpolation_gui.canvas_elem)
-                    self.window['-CHOOSE_COLORSCHEME_TEXT3-'].update(visible=True)
-                    self.window['-COLORMAP_LIST3-'].update(visible=True)
+                    if interpolated_amplitudes is None:
+                        sg.popup_error('Радарограммы имеют слишком разные значения')
+                    else:
+                        self.interpolation_gui.visualizator.make_radargramm_images(
+                            amplitudes1=self.interpolation_gui.chosen_radargramm_amplitudes,
+                            interpolated_amplitudes=interpolated_amplitudes,
+                            amplitudes2=self.interpolation_gui.chosen_second_radargramm_amplitudes,
+                            colormap=self.selected_colormap)
+                        self.interpolation_gui.canvas_elem = self.window['-CANVAS3-'].TKCanvas
+                        self.interpolation_gui.visualizator.show_radargramm_image(self.interpolation_gui.canvas_elem)
+                        self.window['-CHOOSE_COLORSCHEME_TEXT3-'].update(visible=True)
+                        self.window['-COLORMAP_LIST3-'].update(visible=True)
+                        self.window['-DB_SAVE_VISUALIZATION2-'].update(visible=True)
             elif event == '-COLORMAP_LIST3-':
                 selected_colorscheme = values['-COLORMAP_LIST3-']
                 self.selected_colormap = self.interpolation_gui.colormaps_list.get(selected_colorscheme)
@@ -211,6 +215,15 @@ class MainGUI:
                                                                         colormap=self.selected_colormap)
                     canvas_elem = self.window['-CANVAS2-'].TKCanvas
                     self.preprocessor_gui.visualizator.show_radargramm_image(canvas_elem)
+            elif event == '-DB_SAVE_VISUALIZATION2-':
+                self.interpolation_gui.visualizator.db_save(
+                    colormap=self.interpolation_gui.selected_colormap,
+                    img_file=self.interpolation_gui.visualizator.get_bytes_from_image(),
+                    upper_limit=self.interpolation_gui.upper_diap,
+                    lower_limit=self.interpolation_gui.lower_diap,
+                    radargramm_id=self.interpolation_gui.radargramm_list
+                )
+                sg.popup('Данные успешно загружены.')
             elif event == '-QUANTILE_ANALYZE-':
                 self.preprocessor_gui.preprocessor.quantile_analyze()
                 selected_colorscheme = values['-COLORMAP_LIST2-']
