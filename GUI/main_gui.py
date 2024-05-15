@@ -219,9 +219,7 @@ class MainGUI:
                 self.interpolation_gui.visualizator.db_save(
                     colormap=self.interpolation_gui.selected_colormap,
                     img_file=self.interpolation_gui.visualizator.get_bytes_from_image(),
-                    upper_limit=self.interpolation_gui.upper_diap,
-                    lower_limit=self.interpolation_gui.lower_diap,
-                    radargramm_id=self.interpolation_gui.radargramm_list
+                    radargramm_id=values['-RADARGRAMM_LIST3-'][0]
                 )
                 sg.popup('Данные успешно загружены.')
             elif event == '-QUANTILE_ANALYZE-':

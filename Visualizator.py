@@ -108,6 +108,12 @@ class Visualizator:
 
         return byte_img
 
-    def db_save(self, colormap, img_file, upper_limit, lower_limit, radargramm_id):
-        self.visualization_companion.db_save(colormap=colormap, image_file=img_file, upper_limit=upper_limit,
-                                             lower_limit=lower_limit, radargramm_id=radargramm_id, date=datetime.date.today())
+    def db_save(self, colormap, img_file, radargramm_id, upper_limit=None, lower_limit=None):
+        self.visualization_companion.db_save(
+            colormap=colormap,
+            image_file=img_file,
+            upper_limit=upper_limit,
+            lower_limit=lower_limit,
+            radargramm_id=radargramm_id,
+            date=datetime.date.today()
+        )

@@ -22,7 +22,7 @@ class InterpolationGUI:
             '"Холодный" спектр': 'cool',
             '"Теплый" спектр': 'hot'
         }
-        self.selected_colormap = None
+        self.selected_colormap = 'gray'
         self.colormap_names = list(self.colormaps_list.keys())
         self.radargramm_list = []
         self.chosen_radargramm_amplitudes = None
