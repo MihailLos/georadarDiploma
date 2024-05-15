@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from scipy.interpolate import CubicSpline
 
 class Interpolator:
     def __init__(self):
@@ -11,7 +10,19 @@ class Interpolator:
         self.interpolated_num_traces = None
         self.interpolated_num_samples = None
 
-    def interpolated_amplitudes(self, amplitudes1, amplitudes2, num_samples=1000):
+    @staticmethod
+    def lagrange_polynomial(x, y, xi):
+        n = len(x)
+        result = 0.0
+        for i in range(n):
+            term = y[i]
+            for j in range(n):
+                if i != j:
+                    term *= (xi - x[j]) / (x[i] - x[j])
+            result += term
+        return result
+
+    def interpolated_amplitudes(self, amplitudes1, amplitudes2, num_samples=300):
         if isinstance(amplitudes1, list):
             amplitudes1 = pd.DataFrame(amplitudes1)
         if isinstance(amplitudes2, list):
@@ -29,13 +40,11 @@ class Interpolator:
             x2 = np.linspace(0, 1, min_num_samples)
             x_new = np.linspace(0, 1, min_num_samples)
 
-            spline = CubicSpline(x1, y1)
-            spline2 = CubicSpline(x2, y2)
+            interpolated_values = np.array([
+                Interpolator.lagrange_polynomial(x1, y1, x) for x in x_new
+            ])
 
-            y_new1 = spline(x_new)
-            y_new2 = spline2(x_new)
-
-            interpolated_amplitudes[:, trace] = (y_new1 + y_new2) / 2
+            interpolated_amplitudes[:, trace] = interpolated_values
 
         return pd.DataFrame(interpolated_amplitudes, columns=amplitudes1.columns[:num_traces])
 
