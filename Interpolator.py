@@ -1,6 +1,6 @@
 import numpy as np
-from scipy.interpolate import lagrange, CubicSpline
-
+import pandas as pd
+from scipy.interpolate import CubicSpline
 
 class Interpolator:
     def __init__(self):
@@ -11,25 +11,23 @@ class Interpolator:
         self.interpolated_num_traces = None
         self.interpolated_num_samples = None
 
-    def interpolated_amplitudes(self, amplitudes1, amplitudes2):
-        # Проверяем, являются ли амплитуды списками, и конвертируем в массивы NumPy, если нужно
+    def interpolated_amplitudes(self, amplitudes1, amplitudes2, num_samples=1000):
         if isinstance(amplitudes1, list):
-            amplitudes1 = np.array(amplitudes1)
+            amplitudes1 = pd.DataFrame(amplitudes1)
         if isinstance(amplitudes2, list):
-            amplitudes2 = np.array(amplitudes2)
+            amplitudes2 = pd.DataFrame(amplitudes2)
 
-        num_samples = min(amplitudes1.shape[0], amplitudes2.shape[0])
-        min_traces = min(amplitudes1.shape[1], amplitudes2.shape[1])
+        min_num_samples = min(amplitudes1.shape[0], amplitudes2.shape[0], num_samples)
+        num_traces = min(amplitudes1.shape[1], amplitudes2.shape[1])
+        interpolated_amplitudes = np.zeros((min_num_samples, num_traces))
 
-        interpolated_amplitudes = np.zeros((num_samples, min_traces))
+        for trace in range(num_traces):
+            y1 = amplitudes1.iloc[:, trace].values[:min_num_samples]
+            y2 = amplitudes2.iloc[:, trace].values[:min_num_samples]
 
-        for trace in range(min_traces):
-            y1 = amplitudes1[:, trace]
-            y2 = amplitudes2[:, trace]
-
-            x1 = np.linspace(0, 1, len(y1))
-            x2 = np.linspace(0, 1, len(y2))
-            x_new = np.linspace(0, 1, num_samples)
+            x1 = np.linspace(0, 1, min_num_samples)
+            x2 = np.linspace(0, 1, min_num_samples)
+            x_new = np.linspace(0, 1, min_num_samples)
 
             spline = CubicSpline(x1, y1)
             spline2 = CubicSpline(x2, y2)
@@ -39,4 +37,5 @@ class Interpolator:
 
             interpolated_amplitudes[:, trace] = (y_new1 + y_new2) / 2
 
-        return interpolated_amplitudes
+        return pd.DataFrame(interpolated_amplitudes, columns=amplitudes1.columns[:num_traces])
+
