@@ -1,27 +1,22 @@
-import base64
 import datetime
 import io
 
 import numpy as np
 import tkinter as tk
-from PIL import Image, ImageTk
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_agg import FigureCanvasAgg
-
-from database.visualization import VisualizationResultsTableCompanion
 
 
 class Visualizator:
-    def __init__(self):
+    def __init__(self, visualization_companion):
         self.colormap = None
         self.gpr_image_file = None
         self.interpolation_image_file = None
         self.lower_limit = None
         self.upper_limit = None
         self.fig = None
-        self.visualization_companion = VisualizationResultsTableCompanion()
+        self.visualization_companion = visualization_companion
 
     def make_radargramm_image(self, amplitudes, colormap, upper_limit=None, lower_limit=None):
         self.fig = Figure(figsize=(10, 6))

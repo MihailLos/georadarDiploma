@@ -1,8 +1,10 @@
 import PySimpleGUI as sg
 from Radargramm import Radargramm
+
+
 class LoadRadargrammGUI:
-    def __init__(self):
-        self.radargramm = Radargramm()
+    def __init__(self, radargramm_companion):
+        self.radargramm = Radargramm(radargramm_companion)
 
     def make_layout(self):
         layout = [

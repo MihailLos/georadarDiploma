@@ -1,21 +1,25 @@
-from sqlalchemy import MetaData, create_engine, Table, Column, Integer, Text, LargeBinary, Float, ForeignKey, Date, \
-    select
+from sqlalchemy import Table, Column, Integer, Text, LargeBinary, Float, ForeignKey, Date, select
 
-from database.DB_connect import DBConnector
+from database.database_setup import Database
 
 
 class VisualizationResultsTableCompanion:
-    metadata = MetaData()
-    engine = create_engine(DBConnector.db_uri, future=True)
+    def __init__(self, metadata, engine):
+        self.metadata = metadata
+        self.engine = engine
+        self.visualization_results_table = self.create_visualisation_results_table()
 
-    visualization_results_table = Table('visualization_results', metadata,
-                                        Column('ID', Integer, primary_key=True),
-                                        Column('Colormap', Text),
-                                        Column('Image_File', LargeBinary),
-                                        Column('Upper_Limit', Float),
-                                        Column('Lower_Limit', Float),
-                                        Column('Radargramm_ID', Integer, ForeignKey('radargramms.ID')),
-                                        Column('Date', Date))
+    def create_visualisation_results_table(self):
+        return Table(
+            'visualization_results', self.metadata,
+            Column('ID', Integer, primary_key=True),
+            Column('Colormap', Text),
+            Column('Image_File', LargeBinary),
+            Column('Upper_Limit', Float),
+            Column('Lower_Limit', Float),
+            Column('Radargramm_ID', Integer, ForeignKey('radargramms.ID')),
+            Column('Date', Date)
+        )
 
     def db_save(self, colormap, image_file, upper_limit, lower_limit, radargramm_id, date):
         with self.engine.connect() as conn:
@@ -28,9 +32,6 @@ class VisualizationResultsTableCompanion:
                     'Radargramm_ID': radargramm_id,
                     'Date': date
                 })
-
-                conn.commit()
-                self.engine.connect().connection.close()
             else:
                 conn.execute(self.visualization_results_table.insert(), {
                     'Colormap': colormap,
@@ -38,22 +39,23 @@ class VisualizationResultsTableCompanion:
                     'Radargramm_ID': radargramm_id,
                     'Date': date
                 })
-
-                conn.commit()
-                self.engine.connect().connection.close()
+            conn.commit()
 
     def db_read_all_visualizations(self):
-        select_query = self.visualization_results_table.select()
-        result = self.engine.connect().execute(select_query)
-        return result.fetchall()
+        with self.engine.connect() as conn:
+            select_query = self.visualization_results_table.select()
+            results = conn.execute(select_query).fetchall()
+            return results
 
     def db_read_visualization_by_id(self, id):
-        select_query = self.visualization_results_table.select().where(self.visualization_results_table.c["ID"] == id)
-        result = self.engine.connect().execute(select_query)
-        return result.fetchone()
+        with self.engine.connect() as conn:
+            select_query = select(self.visualization_results_table.c).where(
+                self.visualization_results_table.c["ID"] == id)
+            result = conn.execute(select_query).fetchone()
+            return result
 
     def db_delete_visualization_by_id(self, id):
         with self.engine.connect() as conn:
-            conn.execute(self.visualization_results_table.delete().where(self.visualization_results_table.c["ID"] == id))
+            conn.execute(
+                self.visualization_results_table.delete().where(self.visualization_results_table.c["ID"] == id))
             conn.commit()
-            self.engine.connect().connection.close()

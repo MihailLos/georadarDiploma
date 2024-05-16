@@ -1,16 +1,15 @@
 import obspy
 import pandas as pd
-from database.radargramm import RadargrammTableCompanion
 
 
 class Radargramm:
-    def __init__(self):
+    def __init__(self, radargramm_db_companion):
         self.amplitudes_data = pd.DataFrame()
         self.name = str
         self.num_traces = int
         self.num_samples = int
         self.file_content = None
-        self.radargramm_db_companion = RadargrammTableCompanion()
+        self.radargramm_db_companion = radargramm_db_companion
 
     def load_data(self, file, name):
         amplitudes = []

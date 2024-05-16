@@ -1,12 +1,11 @@
 import PySimpleGUI as sg
 from Visualizator import Visualizator
 from database.radargramm import RadargrammTableCompanion
-from database.visualization import VisualizationResultsTableCompanion
 
 
 class VisualizationGUI:
-    def __init__(self):
-        self.visualizator = Visualizator()
+    def __init__(self, radargramm_companion, visualizator_companion):
+        self.visualizator = Visualizator(visualization_companion=visualizator_companion)
         self.colormaps_list = {
             'Черно-белый спектр': 'gray',
             'Цветовой спектр': 'rainbow',
@@ -21,7 +20,7 @@ class VisualizationGUI:
         self.selected_colormap = None
         self.radargramm_list = []
         self.chosen_radargramm_amplitudes = None
-        self.radargramm_companion = RadargrammTableCompanion()
+        self.radargramm_companion = radargramm_companion
         self.colormap_names = list(self.colormaps_list.keys())
         self.lower_diap = 0
         self.upper_diap = 0

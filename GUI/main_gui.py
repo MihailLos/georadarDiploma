@@ -8,12 +8,22 @@ from GUI.visualization_gui import VisualizationGUI
 
 
 class MainGUI:
-    def __init__(self):
-        self.load_radargramm_gui = LoadRadargrammGUI()
-        self.view_data_gui = ViewDataGUI()
-        self.visualization_gui = VisualizationGUI()
-        self.preprocessor_gui = PreprocessorGUI()
-        self.interpolation_gui = InterpolationGUI()
+    def __init__(self, preprocessing_db_companion, radargramm_db_companion, visualisation_db_companion):
+        self.load_radargramm_gui = LoadRadargrammGUI(radargramm_companion=radargramm_db_companion)
+        self.view_data_gui = ViewDataGUI(radargramm_companion=radargramm_db_companion)
+        self.visualization_gui = VisualizationGUI(
+            radargramm_companion=radargramm_db_companion,
+            visualizator_companion=visualisation_db_companion
+        )
+        self.preprocessor_gui = PreprocessorGUI(
+            preprocessor_companion=preprocessing_db_companion,
+            radargramm_companion=radargramm_db_companion,
+            visualizator_companion=visualisation_db_companion
+        )
+        self.interpolation_gui = InterpolationGUI(
+            radargramm_companion=radargramm_db_companion,
+            visualization_companion=visualisation_db_companion
+        )
 
         self.layout = [
             [sg.TabGroup(

@@ -1,12 +1,10 @@
-from database.DB_connect import DBConnector
 from database.radargramm import RadargrammTableCompanion
 import PySimpleGUI as sg
 
 
 class ViewDataGUI:
-    def __init__(self):
-        self.db_connector = DBConnector()
-        self.radargramm_companion = RadargrammTableCompanion()
+    def __init__(self, radargramm_companion):
+        self.radargramm_companion = radargramm_companion
 
     def make_layout(self):
         layout = [

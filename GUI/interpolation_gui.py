@@ -3,14 +3,13 @@ import PySimpleGUI as sg
 from Interpolator import Interpolator
 from Preprocessor import Preprocessor
 from Visualizator import Visualizator
-from database.radargramm import RadargrammTableCompanion
 
 
 class InterpolationGUI:
-    def __init__(self):
+    def __init__(self, radargramm_companion, visualization_companion):
         self.interpolation = Interpolator()
-        self.visualizator = Visualizator()
-        self.preprocessor = Preprocessor()
+        self.visualizator = Visualizator(visualization_companion=visualization_companion)
+        self.preprocessor = Preprocessor(radargramm_companion=radargramm_companion)
         self.colormaps_list = {
             'Черно-белый спектр': 'gray',
             'Цветовой спектр': 'rainbow',
@@ -27,7 +26,7 @@ class InterpolationGUI:
         self.radargramm_list = []
         self.chosen_radargramm_amplitudes = None
         self.chosen_second_radargramm_amplitudes = None
-        self.radargramm_companion = RadargrammTableCompanion()
+        self.radargramm_companion = radargramm_companion
         self.lower_diap = 0
         self.upper_diap = 0
 

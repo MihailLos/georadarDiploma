@@ -2,15 +2,12 @@ import PySimpleGUI as sg
 
 from Preprocessor import Preprocessor
 from Visualizator import Visualizator
-from database.preprocessing import PreprocessingTableCompanion
-from database.radargramm import RadargrammTableCompanion
-
 
 
 class PreprocessorGUI:
-    def __init__(self):
-        self.visualizator = Visualizator()
-        self.preprocessor = Preprocessor()
+    def __init__(self, preprocessor_companion, radargramm_companion, visualizator_companion):
+        self.visualizator = Visualizator(visualization_companion=visualizator_companion)
+        self.preprocessor = Preprocessor(radargramm_companion=radargramm_companion)
         self.colormaps_list = {
             'Черно-белый спектр': 'gray',
             'Цветовой спектр': 'rainbow',
@@ -27,8 +24,8 @@ class PreprocessorGUI:
         self.radargramm_list = []
         self.chosen_radargramm_amplitudes = None
         self.selected_radargramm_id = None
-        self.radargramm_companion = RadargrammTableCompanion()
-        self.preprocessor_companion = PreprocessingTableCompanion()
+        self.radargramm_companion = radargramm_companion
+        self.preprocessor_companion = preprocessor_companion
         self.canvas_elem = None
 
     def make_layout(self):
@@ -60,7 +57,7 @@ class PreprocessorGUI:
         self.radargramm_list.clear()
         for radargramm in radargramms:
             self.radargramm_list.append([radargramm.ID, radargramm.Name, radargramm.Load_Date, radargramm.Num_Traces,
-                         radargramm.Num_Samples])
+                                         radargramm.Num_Samples])
 
     def get_amplitudes_by_id(self, id):
         self.chosen_radargramm_amplitudes = self.radargramm_companion.db_read_radaragramm_by_id(id)
