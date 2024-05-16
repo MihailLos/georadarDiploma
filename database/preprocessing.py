@@ -1,8 +1,6 @@
-# preprocessing.py
 import datetime
 import json
 from sqlalchemy import Table, Column, Integer, Text, LargeBinary, ForeignKey, Date
-from database.database_setup import Database
 
 
 class PreprocessingTableCompanion:

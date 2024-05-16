@@ -27,6 +27,10 @@ class Radargramm:
         with open(file, 'rb') as f:
             self.file_content = f.read()
 
-        self.radargramm_db_companion.db_save(radargramm_name=self.name, file_content=self.file_content,
-                                             num_traces=self.num_traces,
-                                             num_samples=self.num_samples, amplitudes_data=self.amplitudes_data)
+        self.radargramm_db_companion.db_save(
+            radargramm_name=self.name,
+            file_content=self.file_content,
+            num_traces=self.num_traces,
+            num_samples=self.num_samples,
+            amplitudes_data=self.amplitudes_data
+        )

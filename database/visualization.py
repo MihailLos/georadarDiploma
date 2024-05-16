@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column, Integer, Text, LargeBinary, Float, ForeignKey, Date, select
+from sqlalchemy import Table, Column, Integer, Text, LargeBinary, Float, ForeignKey, Date, select, func
 
 from database.database_setup import Database
 
@@ -59,3 +59,9 @@ class VisualizationResultsTableCompanion:
             conn.execute(
                 self.visualization_results_table.delete().where(self.visualization_results_table.c["ID"] == id))
             conn.commit()
+
+    def get_last_id(self):
+        with self.engine.connect() as conn:
+            last_id = conn.execute(select([func.max(self.visualization_results_table.c.ID)])).scalar()
+            return last_id if last_id is not None else 0
+

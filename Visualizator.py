@@ -73,6 +73,11 @@ class Visualizator:
         ax.axvline(x=left_border, color='red', linestyle='-', linewidth=1)  # Левая граница интерполяции
         ax.axvline(x=right_border, color='red', linestyle='-', linewidth=1)  # Правая граница интерполяции
 
+        num_traces = combined.shape[1]
+        num_samples = combined.shape[0]
+
+        return combined.T.tolist(), num_traces, num_samples
+
     def show_radargramm_image(self, canvas):
         # Удаляем все виджеты из канваса
         for widget in canvas.winfo_children():
@@ -103,12 +108,22 @@ class Visualizator:
 
         return byte_img
 
-    def db_save(self, colormap, img_file, radargramm_id, upper_limit=None, lower_limit=None):
-        self.visualization_companion.db_save(
-            colormap=colormap,
-            image_file=img_file,
-            upper_limit=upper_limit,
-            lower_limit=lower_limit,
-            radargramm_id=radargramm_id,
-            date=datetime.date.today()
-        )
+    def db_save(self, colormap, img_file, radargramm_id=None, upper_limit=None, lower_limit=None):
+        if radargramm_id is None:
+            self.visualization_companion.db_save(
+                colormap=colormap,
+                image_file=img_file,
+                upper_limit=upper_limit,
+                lower_limit=lower_limit,
+                radargramm_id=self.visualization_companion.get_last_id(),
+                date=datetime.date.today()
+            )
+        else:
+            self.visualization_companion.db_save(
+                colormap=colormap,
+                image_file=img_file,
+                upper_limit=upper_limit,
+                lower_limit=lower_limit,
+                radargramm_id=radargramm_id,
+                date=datetime.date.today()
+            )

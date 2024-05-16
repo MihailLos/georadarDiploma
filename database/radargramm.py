@@ -31,8 +31,15 @@ class RadargrammTableCompanion:
             Column('Radargramm_ID', Integer, ForeignKey('radargramms.ID'))
         )
 
-    def db_save(self, radargramm_name, file_content, num_traces, num_samples, amplitudes_data,
-                load_date=datetime.date.today()):
+    def db_save(
+            self,
+            radargramm_name,
+            file_content,
+            num_traces,
+            num_samples,
+            amplitudes_data,
+            load_date=datetime.date.today()
+    ):
         with self.engine.connect() as conn:
             radargramm_id = conn.execute(self.radargramm_table.insert(), {
                 'Load_Date': load_date,
@@ -42,7 +49,12 @@ class RadargrammTableCompanion:
                 'Num_Samples': num_samples
             }).inserted_primary_key[0]
 
-            amplitudes_json = json.dumps(amplitudes_data.values.tolist())
+            # Проверка, является ли amplitudes_data списком
+            if isinstance(amplitudes_data, list):
+                amplitudes_json = json.dumps(amplitudes_data)
+            else:
+                amplitudes_json = json.dumps(amplitudes_data.values.tolist())
+
             conn.execute(self.signals_table.insert(), {
                 'Amplitudes': amplitudes_json,
                 'Radargramm_ID': radargramm_id
