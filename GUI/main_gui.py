@@ -263,6 +263,7 @@ class MainGUI:
                     self.window['-RADARGRAMM_LIST2-'].update(values=self.visualization_gui.radargramm_list)
                     self.window['-RADARGRAMM_LIST3-'].update(values=self.visualization_gui.radargramm_list)
                     self.window['-RADARGRAMM_LIST4-'].update(values=self.visualization_gui.radargramm_list)
+                    self.window['-TABLE-'].update(values=self.view_data_gui.get_radargramm_data())
                     sg.popup('Данные успешно загружены!')
             elif event == '-QUANTILE_ANALYZE-':
                 self.preprocessor_gui.preprocessor.quantile_analyze()
