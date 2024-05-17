@@ -85,8 +85,8 @@ class MainGUI:
                     sg.popup_error('Введите название радарограммы!')
                     continue
                 self.load_radargramm_gui.radargramm.load_data(file=file_path, name=radargramm_name)
-                self.visualization_gui.get_radargramm_data()
                 self.window['-TABLE-'].update(values=self.view_data_gui.get_radargramm_data())
+                self.visualization_gui.get_radargramm_data()
                 self.window['-RADARGRAMM_LIST-'].update(values=self.visualization_gui.radargramm_list)
                 self.window['-RADARGRAMM_LIST2-'].update(values=self.visualization_gui.radargramm_list)
                 self.window['-RADARGRAMM_LIST3-'].update(values=self.visualization_gui.radargramm_list)
