@@ -12,18 +12,7 @@ class Interpolator:
         self.interpolated_num_samples = None
 
     @staticmethod
-    def lagrange_polynomial(x, y, xi):
-        n = len(x)
-        result = 0.0
-        for i in range(n):
-            term = y[i]
-            for j in range(n):
-                if i != j:
-                    term *= (xi - x[j]) / (x[i] - x[j])
-            result += term
-        return result
-
-    def interpolated_amplitudes(self, amplitudes1, amplitudes2, num_samples=300):
+    def interpolated_amplitudes(amplitudes1, amplitudes2, num_samples=300, degree=16):
         if isinstance(amplitudes1, list):
             amplitudes1 = pd.DataFrame(amplitudes1)
         if isinstance(amplitudes2, list):
@@ -32,7 +21,7 @@ class Interpolator:
         if amplitudes1.shape[1] != amplitudes2.shape[1]:
             return None
 
-        interpolated_amplitudes = pd.DataFrame()
+        interpolated_amplitudes_list = []
 
         for col in amplitudes1.columns:
             x1 = np.linspace(0, 1, len(amplitudes1))
@@ -42,11 +31,13 @@ class Interpolator:
 
             x_new = np.linspace(0, 1, num_samples)
 
-            coeffs = np.polyfit(np.concatenate((x1, x2)), np.concatenate((y1, y2)), deg=24)
-            poly_func = np.poly1d(coeffs)
+            coefficients = np.polyfit(np.concatenate((x1, x2)), np.concatenate((y1, y2)), deg=degree)
+            poly_func = np.poly1d(coefficients)
 
             interpolated_values = poly_func(x_new)
 
-            interpolated_amplitudes[col] = interpolated_values
+            interpolated_amplitudes_list.append(pd.DataFrame(interpolated_values, columns=[col]))
+
+        interpolated_amplitudes = pd.concat(interpolated_amplitudes_list, axis=1)
 
         return interpolated_amplitudes
